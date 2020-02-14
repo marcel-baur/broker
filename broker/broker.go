@@ -18,6 +18,7 @@ func main() {
 		return
 	}
 	PORT := ":" + args[1]
+	t := RoutingTable{table: map[string]string{}, log: map[time.Time]string{}, members: map[string]bool{}}
 	l, err := net.Listen("tcp4", PORT)
 	if err != nil {
 		fmt.Println(err)
@@ -31,12 +32,14 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		go handleConnection(c)
+		go handleConnection(c, t)
 	}
 }
 
-func handleConnection(c net.Conn) {
-	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
+func handleConnection(c net.Conn, t RoutingTable) {
+	addr := c.RemoteAddr().String()
+	fmt.Printf("Serving %s\n", addr)
+	t.addMember(addr)
 	for {
 		netData, err := bufio.NewReader(c).ReadString('\n')
 		if err != nil {
@@ -53,5 +56,6 @@ func handleConnection(c net.Conn) {
 			c.Write([]byte(string(result)))
 		}
 	}
+	t.removeMember(addr)
 	c.Close()
 }
